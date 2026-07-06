@@ -1,0 +1,11 @@
+# Foundry
+out/
+cache/
+broadcast/
+
+# Soldeer dependencies (re-fetch with `forge soldeer install`)
+dependencies/
+soldeer.lock
+
+# Env
+.env

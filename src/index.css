@@ -1,0 +1,89 @@
+@import 'tailwindcss';
+@config '../tailwind.config.js';
+
+:root {
+  color-scheme: light;
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f4f4f5;
+  --color-border: #e4e4e7;
+  --color-border-subtle: #f0f0f0;
+  --color-accent: #7c5cfc;
+  --color-accent-hover: #9070ff;
+  --color-positive: #16a34a;
+  --color-negative: #dc2626;
+  --color-warning: #d97706;
+  --color-locked: #a1a1aa;
+  --color-locked-bg: #f4f4f5;
+  --color-foreground: #0a0a0a;
+  --color-muted: #6b7280;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-bg: #0a0a0a;
+  --color-surface: #111111;
+  --color-surface-raised: #1a1a1a;
+  --color-border: #2a2a2a;
+  --color-border-subtle: #1e1e1e;
+  --color-accent: #7c5cfc;
+  --color-accent-hover: #9070ff;
+  --color-positive: #22c55e;
+  --color-negative: #ef4444;
+  --color-warning: #f59e0b;
+  --color-locked: #404040;
+  --color-locked-bg: #1c1c1c;
+  --color-foreground: #ffffff;
+  --color-muted: #9ca3af;
+}
+
+@layer base {
+  body {
+    @apply bg-bg font-sans text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 255, 255, 0.04), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(255, 255, 255, 0.03), transparent);
+  }
+
+  :root:not(.dark) body {
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 0, 0, 0.03), transparent);
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+}
+
+@layer utilities {
+  .veil-page {
+    @apply mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8;
+  }
+
+  .veil-input {
+    @apply mt-1.5 w-full rounded-xl border border-border bg-surface-raised px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-border-subtle;
+  }
+
+  .veil-btn-primary {
+    @apply rounded-xl bg-accent px-5 py-3 text-sm font-medium text-white transition hover:bg-accent-hover disabled:opacity-50;
+  }
+
+  .veil-btn-secondary {
+    @apply rounded-xl border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground transition hover:bg-surface-raised;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}

@@ -1,0 +1,19 @@
+# Local dev only — merged automatically by `docker compose up`.
+# Do not use this file in production deployments.
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  pgweb:
+    image: sosedoff/pgweb:0.15.0
+    container_name: veil-pgweb
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      PGWEB_DATABASE_URL: postgres://veil:veil@postgres:5432/veil?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy

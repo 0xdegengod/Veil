@@ -1,0 +1,12 @@
+# Production overlay — Postgres on the internal Docker network only.
+# No pgweb. Set POSTGRES_PASSWORD in the environment (see .env.example).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Run the Hono API separately (or add a backend service here). DATABASE_URL must
+# use the hostname `postgres`, e.g. postgres://veil:<password>@postgres:5432/veil
+
+services:
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}

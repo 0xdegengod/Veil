@@ -1,0 +1,27 @@
+# Base Compose — shared by dev and production.
+#
+# Local dev (auto-merges docker-compose.override.yml):
+#   docker compose up -d
+#
+# Production (no pgweb, Postgres not published):
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: veil-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: veil
+      POSTGRES_PASSWORD: veil
+      POSTGRES_DB: veil
+    volumes:
+      - veil_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U veil -d veil"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  veil_pgdata:
