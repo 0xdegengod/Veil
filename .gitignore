@@ -28,6 +28,7 @@ pnpm-debug.log*
 *.tsbuildinfo
 
 # Editor / OS
+.cursor/
 .vscode/*
 !.vscode/extensions.json
 .idea/
@@ -40,3 +41,10 @@ pnpm-debug.log*
 
 # Vite
 *.local
+
+# Foundry (contracts/)
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/dependencies/
+contracts/soldeer.lock

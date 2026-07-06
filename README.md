@@ -1,73 +1,157 @@
-# React + TypeScript + Vite
+# Veil
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Veil is a confidential group expense app built on [Zama FHEVM](https://docs.zama.org/protocol). Split bills with friends, track who owes what, and settle up without exposing everyone's balances to the group or a central server.
 
-Currently, two official plugins are available:
+Sensitive amounts stay encrypted on-chain. The backend stores only metadata: group names, expense descriptions, handles, and action-only notifications. Each member decrypts their own balance when they choose to reveal it.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What you can do
 
-## React Compiler
+- Create groups and invite members by link
+- Add expenses and split them across members
+- View encrypted balances and reveal your own net position
+- Pay owed shares with Sepolia ETH
+- Get repayment reminders and activity across groups
+- Sign in with Ethereum (SIWE) and pick a unique handle
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## How it works
 
-## Expanding the ESLint configuration
+Veil has three parts:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| Part | Stack | Role |
+|------|-------|------|
+| **Frontend** (`/`) | React, Vite, wagmi, RainbowKit | Wallet connection, SIWE auth, FHE decrypt, on-chain writes |
+| **Backend** (`/backend`) | Hono, Drizzle, Postgres | Profiles, groups, invites, expense metadata, notifications |
+| **Contracts** (`/contracts`) | Foundry, FHEVM | Group membership, encrypted ledger, settlements |
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Typical flow: sign a chain transaction first, then index metadata in the API. Amounts never land in Postgres as plaintext.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Prerequisites
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- **Node.js** 20+ (backend tested on Node 23)
+- **npm**
+- **Docker** (for local Postgres)
+- **MetaMask** or another injected wallet on **Sepolia**
+- **Foundry** (`forge` 1.6+) if you deploy contracts yourself
+
+## Local setup
+
+Run these from the repo root unless noted.
+
+### 1. Contracts (Sepolia)
+
+Skip this if you already have deployed addresses.
+
+```bash
+cd contracts
+cp .env.example .env
+# Set RPC_URL and PRIVATE_KEY in .env
+forge soldeer install
+forge build
+./scripts/deploy-sepolia.sh
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The deploy script writes contract addresses into the root `.env`. See [`contracts/README.md`](contracts/README.md) for details.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 2. Backend
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd backend
+cp .env.example .env
+# Set JWT_SECRET (e.g. openssl rand -base64 32)
+docker compose up -d
+npm install
+npm run db:push
+npm run dev
 ```
+
+API runs at **http://localhost:8787**. Postgres is on **localhost:5432** (`veil` / `veil`).
+
+### 3. Frontend
+
+```bash
+cp .env.example .env
+npm install
+npm run dev
+```
+
+App runs at **http://localhost:5173**.
+
+Set these in `.env` before starting:
+
+```bash
+VITE_API_URL=http://localhost:8787
+VITE_SIWE_DOMAIN=localhost:5173
+VITE_SIWE_URI=http://localhost:5173
+VITE_SIWE_CHAIN_ID=11155111
+VITE_GROUP_REGISTRY_ADDRESS=0x...
+VITE_CONFIDENTIAL_LEDGER_ADDRESS=0x...
+VITE_SETTLEMENTS_ADDRESS=0x...
+```
+
+`VITE_SIWE_*` must match `SIWE_DOMAIN`, `SIWE_URI`, and `CHAIN_ID` in `backend/.env`.
+
+### 4. First run in the browser
+
+1. Open http://localhost:5173
+2. Connect a Sepolia wallet
+3. Sign in with Ethereum and choose a handle
+4. Create a group or accept an invite
+5. Add an expense and reveal your balance when prompted
+
+## Environment files
+
+| File | Purpose |
+|------|---------|
+| `.env.example` | Frontend: API URL, SIWE, contract addresses, optional WalletConnect |
+| `backend/.env.example` | Database, JWT, CORS, SIWE chain config |
+| `contracts/.env.example` | Sepolia RPC and deployer key |
+
+Never commit `.env` files. They are gitignored.
+
+## Scripts
+
+**Frontend** (repo root):
+
+```bash
+npm run dev       # dev server on :5173
+npm run build     # production build
+npm run lint      # ESLint
+npm run preview   # preview production build
+```
+
+**Backend** (`backend/`):
+
+```bash
+npm run dev         # watch mode
+npm run start       # run once
+npm run db:push     # sync schema to Postgres (dev)
+npm run typecheck   # TypeScript check
+```
+
+**Contracts** (`contracts/`):
+
+```bash
+forge test -vvv     # run contract tests
+forge build         # compile
+```
+
+## Project layout
+
+```
+.
+├── src/              # React app (pages, components, hooks, API client)
+├── backend/          # Hono API + Drizzle schema
+├── contracts/        # Foundry project (GroupRegistry, ConfidentialLedger, Settlements)
+├── public/           # Static assets
+└── .env.example      # Frontend env template
+```
+
+## Further reading
+
+- [`backend/README.md`](backend/README.md) — API routes, auth, database schema
+- [`contracts/README.md`](contracts/README.md) — contract design, tests, deploy scripts
+- [Zama FHEVM docs](https://docs.zama.org/protocol)
+
+## Network
+
+Veil targets **Ethereum Sepolia** (chain id `11155111`). The frontend is Sepolia-only today.

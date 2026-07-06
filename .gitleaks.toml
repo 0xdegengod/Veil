@@ -1,0 +1,17 @@
+# Gitleaks config for Veil. Extends the default ruleset and allowlists
+# known-safe values (public test keys, example placeholders).
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist for Veil"
+paths = [
+  '''\.env\.example$''',
+  '''\.github/workflows/gitleaks\.yml$''',
+]
+regexes = [
+  # Anvil / Hardhat well-known test account #0 private key (public, local dev only)
+  '''0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80''',
+  # Placeholder used in contracts/.env.example
+  '''0xYOUR_DEPLOYER_PRIVATE_KEY''',
+]
