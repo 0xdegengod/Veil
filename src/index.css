@@ -53,6 +53,13 @@
   #root {
     @apply min-h-screen;
   }
+
+  /* 16px on mobile prevents iOS Safari zoom-on-focus */
+  input:not([type='checkbox']):not([type='radio']):not([type='button']):not([type='submit']):not([type='reset']):not([type='file']):not([type='image']):not([type='hidden']),
+  textarea,
+  select {
+    @apply text-base sm:text-sm;
+  }
 }
 
 @layer utilities {
@@ -61,7 +68,7 @@
   }
 
   .veil-input {
-    @apply mt-1.5 w-full rounded-xl border border-border bg-surface-raised px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-border-subtle;
+    @apply mt-1.5 w-full rounded-xl border border-border bg-surface-raised px-4 py-3 text-base text-foreground outline-none transition placeholder:text-muted focus:border-border-subtle sm:text-sm;
   }
 
   .veil-btn-primary {

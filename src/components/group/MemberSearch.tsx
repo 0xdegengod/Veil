@@ -107,7 +107,7 @@ export function MemberSearch({
               setTouched(true)
             }}
             placeholder="Search by @handle"
-            className="w-full bg-transparent font-mono text-sm text-foreground outline-none placeholder:text-muted"
+            className="w-full bg-transparent font-mono text-foreground outline-none placeholder:text-muted"
           />
           {isSearching && (
             <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-border border-t-accent" />

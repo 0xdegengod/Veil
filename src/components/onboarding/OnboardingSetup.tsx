@@ -5,6 +5,7 @@ import { Stepper } from '../shared/Stepper.tsx'
 import { WalletButton } from '../shared/WalletButton.tsx'
 import { useAuth } from '../../hooks/useAuth.ts'
 import { useWallet } from '../../hooks/useWallet.ts'
+import { isProductionApiMisconfigured } from '../../lib/api/config.ts'
 import { toast } from '../../store/toast.ts'
 
 const STEPS = ['Wallet', 'Sign in', 'Identity', 'Ready']
@@ -64,7 +65,9 @@ export function OnboardingSetup() {
     } catch (err) {
       const message =
         err instanceof Error && err.message === 'api_unreachable'
-          ? 'Backend unreachable. Run: cd backend && npm run start'
+          ? isProductionApiMisconfigured()
+            ? 'Backend URL not configured. Set VITE_API_URL on Vercel to your Render backend URL, then redeploy.'
+            : 'Backend unreachable. Run: cd backend && npm run start'
           : 'Sign-in failed. Confirm Sepolia network and try again.'
       toast.error(message)
     } finally {
@@ -170,16 +173,14 @@ export function OnboardingSetup() {
               <label htmlFor="handle" className="mb-1.5 block text-sm text-muted">
                 Handle
               </label>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
-                  @
-                </span>
+              <div className="mt-1.5 flex w-full items-center overflow-hidden rounded-xl border border-border bg-surface-raised focus-within:border-border-subtle">
+                <span className="shrink-0 pl-4 text-base text-muted sm:text-sm">@</span>
                 <input
                   id="handle"
                   value={handle}
                   onChange={(e) => setHandle(e.target.value)}
                   placeholder="ada_eth"
-                  className="veil-input w-full pl-8"
+                  className="min-w-0 flex-1 border-0 bg-transparent py-3 pr-4 text-foreground outline-none placeholder:text-muted"
                   autoComplete="username"
                 />
               </div>
