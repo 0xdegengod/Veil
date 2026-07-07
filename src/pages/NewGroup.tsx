@@ -14,7 +14,7 @@ import { createGroupFlow } from '../lib/services/createGroup.ts'
 import { toast } from '../store/toast.ts'
 import type { Member } from '../types/contracts.ts'
 
-const STEPS = ['Name', 'Settings', 'Members']
+const STEPS = ['Name', 'Members']
 
 type Created = {
   id: string
@@ -141,18 +141,6 @@ export function NewGroup() {
         )}
 
         {step === 1 && (
-          <div className="space-y-5">
-            <p className="rounded-lg border border-border-subtle bg-surface-raised/40 p-4 text-left text-sm leading-relaxed text-muted">
-              Amounts stay encrypted end-to-end. In this version, you settle expense shares
-              directly to the payer on Sepolia ETH.
-            </p>
-            <p className="text-left text-xs text-muted">
-              Next: add members by @handle. You&apos;re added automatically as the admin.
-            </p>
-          </div>
-        )}
-
-        {step === 2 && (
           <div className="space-y-4">
             <p className="text-left text-sm font-medium text-foreground">Add members</p>
             <MemberSearch

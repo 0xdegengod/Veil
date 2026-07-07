@@ -5,6 +5,8 @@ import { fetchAuthMe } from '../lib/auth/siwe.ts'
 import { getSessionToken, subscribeSession } from '../lib/auth/session.ts'
 import { signOut } from '../lib/auth/siwe.ts'
 import { clearDecryptSession } from '../lib/fhe/userDecrypt.ts'
+import { clearConfidentialUsdcSession } from '../lib/payments/confidentialUsdcBalance.ts'
+import { clearConfidentialUsdcCache } from '../hooks/useConfidentialUsdc.ts'
 
 /**
  * Clears SIWE session when the connected wallet changes or disconnects.
@@ -22,6 +24,8 @@ export function useWalletSessionSync() {
 
   const logout = useCallback(() => {
     clearDecryptSession()
+    clearConfidentialUsdcSession()
+    clearConfidentialUsdcCache()
     signOut()
     queryClient.clear()
   }, [queryClient])

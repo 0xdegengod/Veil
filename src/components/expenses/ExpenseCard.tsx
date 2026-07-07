@@ -1,5 +1,6 @@
 import type { Expense } from '../../types/contracts.ts'
 import { isExpenseYours, payerDisplayName } from '../../lib/utils/format.ts'
+import { ExpenseStatusChip } from './ExpenseStatusChip.tsx'
 
 type ExpenseCardProps = {
   expense: Expense
@@ -8,8 +9,24 @@ type ExpenseCardProps = {
   onFlag: (expenseId: string) => void
 }
 
+function expenseStatusBadge(expense: Expense): 'paid' | 'all_paid' | 'pending' | null {
+  if (expense.isYourExpense) {
+    if (
+      expense.pendingReceivableCount === 0 &&
+      expense.memberCount > 1
+    ) {
+      return 'all_paid'
+    }
+    return null
+  }
+  if (expense.yourShareStatus === 'paid') return 'paid'
+  if (expense.yourShareStatus === 'pending') return 'pending'
+  return null
+}
+
 export function ExpenseCard({ expense, currentUserAddress, onSelect, onFlag }: ExpenseCardProps) {
   const isYours = isExpenseYours(expense, currentUserAddress)
+  const statusBadge = expenseStatusBadge(expense)
 
   return (
     <article className="group relative rounded-xl border border-border bg-surface-raised/30 transition hover:border-border-subtle hover:bg-surface-raised/60">
@@ -26,8 +43,9 @@ export function ExpenseCard({ expense, currentUserAddress, onSelect, onFlag }: E
                 Yours
               </span>
             )}
+            {statusBadge && <ExpenseStatusChip status={statusBadge} />}
             {expense.pendingReceivableCount != null && expense.pendingReceivableCount > 0 && (
-              <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
+              <span className="rounded-full bg-negative/15 px-2 py-0.5 text-[10px] font-medium text-negative">
                 {expense.pendingReceivableCount} unpaid
               </span>
             )}
@@ -35,7 +53,7 @@ export function ExpenseCard({ expense, currentUserAddress, onSelect, onFlag }: E
           <p className="mt-1.5 text-sm text-muted">
             Paid by {payerDisplayName(expense, currentUserAddress)}, {expense.memberCount} members
           </p>
-          {isYours && (
+          {isYours && expense.pendingReceivableCount !== 0 && (
             <p className="mt-1 text-xs text-muted">Tap to see who owes you</p>
           )}
         </div>

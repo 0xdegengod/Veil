@@ -4,7 +4,9 @@ import { NavLink } from 'react-router-dom'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useAccount } from 'wagmi'
 import { useAuth } from '../../hooks/useAuth.ts'
+import { useConfidentialUsdc } from '../../hooks/useConfidentialUsdc.ts'
 import { useThemeStore } from '../../store/theme.ts'
+import { AccountMenuCusd, AccountMenuCusdBadge } from './AccountMenuCusd.tsx'
 import { MoonIcon, SunIcon, UserIcon } from './NavItems.tsx'
 
 function shortenAddress(address: string): string {
@@ -22,6 +24,7 @@ export function AccountMenu({ setupComplete }: AccountMenuProps) {
   const auth = useAuth(address, chainId)
   const theme = useThemeStore((s) => s.theme)
   const toggleTheme = useThemeStore((s) => s.toggleTheme)
+  const cusd = useConfidentialUsdc()
 
   useEffect(() => {
     if (!open) return
@@ -77,13 +80,20 @@ export function AccountMenu({ setupComplete }: AccountMenuProps) {
               <span className="flex size-8 items-center justify-center rounded-lg bg-accent/10 text-accent">
                 {initial ?? <UserIcon className="size-4" />}
               </span>
+              {connected && setupComplete && (
+                <AccountMenuCusdBadge
+                  units={cusd.units}
+                  isRevealed={cusd.isRevealed}
+                  hasEncryptedBalance={cusd.hasEncryptedBalance}
+                />
+              )}
               <ChevronIcon open={open} />
             </button>
 
             {open && (
               <div
                 role="menu"
-                className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-56 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-[0_16px_48px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.45)]"
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-60 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-[0_16px_48px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.45)]"
               >
                 <div className="border-b border-border/60 px-3 py-2.5">
                   <p className="truncate text-sm font-medium text-foreground">{title}</p>
@@ -96,6 +106,19 @@ export function AccountMenu({ setupComplete }: AccountMenuProps) {
                     <p className="mt-0.5 text-xs text-muted">Connect to get started</p>
                   )}
                 </div>
+
+                {connected && setupComplete && (
+                  <AccountMenuCusd
+                    units={cusd.units}
+                    isRevealed={cusd.isRevealed}
+                    hasEncryptedBalance={cusd.hasEncryptedBalance}
+                    revealStatus={cusd.revealStatus}
+                    unwrapStatus={cusd.unwrapStatus}
+                    isUnwrapping={cusd.isUnwrapping}
+                    onReveal={cusd.reveal}
+                    onUnwrap={cusd.unwrap}
+                  />
+                )}
 
                 {!connected && (
                   <MenuButton

@@ -11,6 +11,7 @@ import {
 } from '../lib/reminders.ts'
 import { loadExpenseMeta } from '../lib/expenseMeta.ts'
 import { verifyEthRepaymentTx } from '../lib/verifyEthRepayment.ts'
+import { verifyUsdcRepaymentTx } from '../lib/verifyUsdcRepayment.ts'
 import { sessionWallet } from '../middleware/session.ts'
 import type { AppHono } from '../types.ts'
 
@@ -102,9 +103,10 @@ export function registerExpenseRoutes(app: AppHono) {
         const participants = participantsByExpense.get(expense.id) ?? []
         const participantAddresses = participants.map((p) => p.walletAddress)
         const youArePayer = normalizeAddress(expense.payerAddress) === wallet
-        const isParticipant = participants.some(
+        const yourParticipant = participants.find(
           (p) => normalizeAddress(p.walletAddress) === wallet,
         )
+        const isParticipant = Boolean(yourParticipant)
 
         return {
           id: expense.id,
@@ -120,6 +122,10 @@ export function registerExpenseRoutes(app: AppHono) {
           pendingReceivableCount: youArePayer
             ? pendingReceivableCount(expense.payerAddress, participants)
             : undefined,
+          yourShareStatus:
+            !youArePayer && isParticipant
+              ? (yourParticipant!.status as 'pending' | 'paid')
+              : undefined,
         }
       }),
       total,
@@ -319,11 +325,13 @@ export function registerExpenseRoutes(app: AppHono) {
   })
 
   const repaySchema = z.object({
+    method: z.enum(['SEPOLIA_ETH', 'CUSD']).default('SEPOLIA_ETH'),
     txHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
     expectedWei: z.string().regex(/^\d+$/).optional(),
+    expectedUsdcUnits: z.string().regex(/^\d+$/).optional(),
   })
 
-  /** Record an on-chain Sepolia ETH repayment for the caller's pending expense share. */
+  /** Record an on-chain repayment for the caller's pending expense share. */
   app.post('/groups/:groupId/expenses/:expenseId/repay', async (c) => {
     const groupId = c.req.param('groupId')
     const expenseId = c.req.param('expenseId')
@@ -365,12 +373,20 @@ export function registerExpenseRoutes(app: AppHono) {
     }
 
     try {
-      await verifyEthRepaymentTx({
-        txHash: parsed.data.txHash as `0x${string}`,
-        participantAddress: caller,
-        payeeAddress: expense.payerAddress,
-        expectedWei: parsed.data.expectedWei ? BigInt(parsed.data.expectedWei) : undefined,
-      })
+      if (parsed.data.method === 'CUSD') {
+        await verifyUsdcRepaymentTx({
+          txHash: parsed.data.txHash as `0x${string}`,
+          participantAddress: caller,
+          payeeAddress: expense.payerAddress,
+        })
+      } else {
+        await verifyEthRepaymentTx({
+          txHash: parsed.data.txHash as `0x${string}`,
+          participantAddress: caller,
+          payeeAddress: expense.payerAddress,
+          expectedWei: parsed.data.expectedWei ? BigInt(parsed.data.expectedWei) : undefined,
+        })
+      }
     } catch (e) {
       const code = e instanceof Error ? e.message : 'tx_verify_failed'
       return apiError(c, 'invalid', 400, { tx: code })

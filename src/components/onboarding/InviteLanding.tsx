@@ -8,7 +8,11 @@ type InviteLandingProps = {
   isLoading: boolean
   isError: boolean
   isConnected: boolean
-  onTwitterSignIn: () => void
+  isAuthenticated: boolean
+  hasProfile: boolean
+  isJoining: boolean
+  onSignIn: () => void
+  onCompleteProfile: () => void
 }
 
 export function InviteLanding({
@@ -16,13 +20,17 @@ export function InviteLanding({
   isLoading,
   isError,
   isConnected,
-  onTwitterSignIn,
+  isAuthenticated,
+  hasProfile,
+  isJoining,
+  onSignIn,
+  onCompleteProfile,
 }: InviteLandingProps) {
   if (isLoading) return <Skeleton className="h-64 w-full max-w-md rounded-2xl" />
 
   if (isError || !invite) {
     return (
-      <p className="text-sm text-negative">Unable to load invite.</p>
+      <p className="text-sm text-negative">This invite link is invalid or has expired.</p>
     )
   }
 
@@ -40,19 +48,26 @@ export function InviteLanding({
       </p>
 
       <div className="mt-8 space-y-3">
-        <WalletButton />
-        <button
-          type="button"
-          onClick={onTwitterSignIn}
-          className="veil-btn-secondary w-full"
-        >
-          Sign in with Twitter first
-        </button>
-      </div>
+        {!isConnected && <WalletButton />}
 
-      {isConnected && (
-        <p className="mt-6 text-sm text-positive">Wallet connected. Joining group…</p>
-      )}
+        {isConnected && !isAuthenticated && (
+          <button type="button" onClick={onSignIn} className="veil-btn-primary w-full">
+            Sign in with Ethereum
+          </button>
+        )}
+
+        {isConnected && isAuthenticated && !hasProfile && (
+          <button type="button" onClick={onCompleteProfile} className="veil-btn-primary w-full">
+            Choose your @handle to join
+          </button>
+        )}
+
+        {isConnected && isAuthenticated && hasProfile && (
+          <p className="text-sm text-positive">
+            {isJoining ? 'Joining group…' : 'Ready to join.'}
+          </p>
+        )}
+      </div>
     </div>
   )
 }

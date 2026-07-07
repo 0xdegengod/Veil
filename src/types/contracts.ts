@@ -42,6 +42,8 @@ export type Expense = {
   createdAt: string
   /** Present when the viewer is the payer — count of shares still unpaid */
   pendingReceivableCount?: number
+  /** Present when the viewer is a participant (not payer) */
+  yourShareStatus?: ExpenseShareStatus
   /** Present when the viewer is the payer */
   isYourExpense?: boolean
 }

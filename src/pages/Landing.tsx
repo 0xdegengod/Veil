@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { SEPOLIA_ETH_FAUCET_URL } from '../lib/constants/app.ts'
 import { VeilLogo } from '../components/shared/VeilLogo.tsx'
 import { WalletButton } from '../components/shared/WalletButton.tsx'
 import { LandingSectionHeader } from '../components/landing/LandingSectionHeader.tsx'
@@ -37,14 +38,14 @@ const features = [
       "One view of what you owe, what you're owed, and outstanding repayments across every group.",
   },
   {
+    title: 'Confidential repayments',
+    description:
+      'Repay shares with encrypted cUSD on Sepolia. Transfer amounts stay hidden on the explorer; only payer and payee can decrypt.',
+  },
+  {
     title: 'Handle-based identity',
     description:
       "Pick a @handle during onboarding. It's bound to your wallet.",
-  },
-  {
-    title: 'SIWE authentication',
-    description:
-      'Sign in with Ethereum. Sessions are JWT-backed. No trusted headers or plaintext secrets.',
   },
 ]
 
@@ -62,7 +63,7 @@ const steps = [
   {
     n: '03',
     title: 'Repay shares',
-    body: 'Send Sepolia ETH to the payer. Activity and awaiting-from-others update across groups.',
+    body: 'Wrap test USDC into confidential cUSD and send an encrypted transfer to the payer. Amounts stay private on-chain.',
   },
 ]
 
@@ -77,7 +78,11 @@ const faqs = [
   },
   {
     q: 'What network does Veil use?',
-    a: 'Currently on Sepolia testnet with Zama FHEVM contracts. Connect MetaMask, sign in with SIWE, and grab test ETH from a faucet. Mainnet coming soon...',
+    a: 'Currently on Sepolia testnet with Zama FHEVM contracts. Connect MetaMask, sign in with SIWE, and grab test ETH from a faucet. Mint test USDC in the app. Mainnet coming soon...',
+  },
+  {
+    q: 'Are repayment amounts visible on-chain?',
+    a: 'No. Repayments use Zama confidential ERC-7984 cUSD. The transfer amount is encrypted on Sepolia; only the payer and payee can decrypt it.',
   },
 ]
 
@@ -157,8 +162,7 @@ export function Landing() {
               <RevealItem delayMs={280}>
                 <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-muted sm:mt-6 sm:text-base md:text-lg">
                   Veil is a group expense app built on Zama FHEVM. Balances and shares stay
-                  encrypted on-chain. Your backend never sees a dollar figure. Connect your
-                  wallet, pick a handle, start splitting.
+                  encrypted on-chain.
                 </p>
               </RevealItem>
               <RevealItem delayMs={400}>
@@ -293,28 +297,16 @@ export function Landing() {
         </RevealSection>
 
         {/* CTA */}
-        <RevealSection id="landing-cta" panel className="relative overflow-hidden">
+        <RevealSection
+          id="landing-cta"
+          panel
+          className="relative overflow-hidden max-lg:!min-h-0 max-lg:!pb-6 max-lg:!pt-16"
+        >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(124,92,252,0.16),_transparent_65%)]" />
           <div className="relative mx-auto w-full max-w-3xl px-4 text-center sm:px-6">
             <RevealItem>
-              <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 text-accent shadow-[0_0_40px_rgba(124,92,252,0.2)] sm:mb-6 sm:size-16">
-                <svg viewBox="0 0 24 24" fill="none" className="size-6 sm:size-7" aria-hidden>
-                  <path
-                    d="M6 10V8a6 6 0 1112 0v2"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                  />
-                  <rect
-                    x="5"
-                    y="10"
-                    width="14"
-                    height="10"
-                    rx="2"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                  />
-                </svg>
+              <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 shadow-[0_0_40px_rgba(124,92,252,0.2)] sm:mb-6 sm:size-16">
+                <VeilLogo size="lg" showWordmark={false} className="justify-center" />
               </div>
               <h2 className="text-[1.625rem] font-semibold leading-tight tracking-tight sm:text-4xl">
                 Ready to split privately?
@@ -325,28 +317,32 @@ export function Landing() {
               </p>
             </RevealItem>
             <RevealItem delayMs={200}>
-              <div className="mt-6 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-4">
+              <div className="mt-5 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-8 sm:flex-row sm:items-center sm:gap-4">
                 <LaunchButton className="w-full sm:w-auto" />
                 <div className="w-full sm:w-auto [&_button]:min-h-11 [&_button]:w-full sm:[&_button]:w-auto">
                   <WalletButton />
                 </div>
               </div>
-              <p className="mt-5 text-xs text-muted sm:mt-6">
+              <p className="mt-4 text-xs text-muted sm:mt-6">
                 Sepolia testnet ·{' '}
                 <a
-                  href="https://sepoliafaucet.com"
+                  href={SEPOLIA_ETH_FAUCET_URL}
                   target="_blank"
                   rel="noreferrer"
                   className="underline underline-offset-2 hover:text-foreground"
                 >
                   Get test ETH
                 </a>
+                {' · Mint test USDC in the app'}
               </p>
             </RevealItem>
           </div>
         </RevealSection>
 
-        <footer className="snap-start px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-center text-sm text-muted lg:pb-8">
+        <footer className="snap-start px-4 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-center text-sm text-muted sm:pt-4 sm:pb-8 lg:py-8">
+          <div className="mb-4 flex justify-center">
+            <VeilLogo size="lg" showWordmark={false} />
+          </div>
           <p>Veil · confidential group expenses on FHEVM</p>
           <p>Built by <Link to="https://www.x.com/0x_degengod" target="_blank" className="underline underline-offset-2 hover:text-foreground text-white">Degengod</Link></p>
         </footer>

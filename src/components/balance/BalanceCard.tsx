@@ -11,6 +11,7 @@ type BalanceCardProps = {
   revealStatus: RevealStatus
   onReveal: () => void
   className?: string
+  compact?: boolean
 }
 
 function LockedPulseBars() {
@@ -35,6 +36,7 @@ export function BalanceCard({
   revealStatus,
   onReveal,
   className = '',
+  compact = false,
 }: BalanceCardProps) {
   const revealed = useBalanceStore((s) => s.revealed)
   const countdownSeconds = useBalanceStore((s) => s.countdownSeconds)
@@ -47,13 +49,19 @@ export function BalanceCard({
   }, [revealed, tickCountdown])
 
   if (isLoading) {
-    return <Skeleton className={`min-h-[17.5rem] rounded-2xl ${className}`} />
+    return (
+      <Skeleton
+        className={`rounded-2xl ${compact ? 'h-28' : 'min-h-[17.5rem]'} ${className}`}
+      />
+    )
   }
 
   if (isError) {
     return (
       <div
-        className={`flex min-h-[17.5rem] w-full items-center justify-center rounded-2xl border border-border bg-locked-bg p-8 text-center ${className}`}
+        className={`flex w-full items-center justify-center rounded-2xl border border-border bg-locked-bg p-6 text-center ${
+          compact ? 'min-h-28' : 'min-h-[17.5rem]'
+        } ${className}`}
       >
         <p className="text-sm text-negative">Unable to load balance.</p>
       </div>
@@ -61,6 +69,34 @@ export function BalanceCard({
   }
 
   const isRevealed = revealStatus === 'revealed' && revealed
+
+  if (compact) {
+    return (
+      <div
+        className={`rounded-2xl border border-border bg-locked-bg p-4 ${className}`}
+      >
+        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
+          <LockIcon className="text-[10px]" />
+          Your balance in this group
+        </div>
+        <div className="mb-3 flex min-h-[2rem] items-center">
+          {isRevealed ? (
+            <p className="animate-fade-in font-mono text-2xl font-medium tabular-nums text-foreground">
+              {formatAmount(revealed.amountCents)}
+            </p>
+          ) : (
+            <LockedPulseBars />
+          )}
+        </div>
+        {isRevealed && (
+          <p className="mb-3 font-mono text-[11px] tabular-nums text-muted">
+            Auto-locks in {formatCountdown(countdownSeconds)}
+          </p>
+        )}
+        <RevealButton status={revealStatus} onReveal={onReveal} />
+      </div>
+    )
+  }
 
   return (
     <div

@@ -16,18 +16,23 @@ export function NavTextItem({
   children,
   enabled,
   badge,
+  className,
 }: {
   to: string
   children: ReactNode
   enabled: boolean
   badge?: number
+  className?: string
 }) {
   if (!enabled) {
-    return <span className={navLinkDisabled}>{children}</span>
+    return <span className={`${navLinkDisabled} ${className ?? ''}`.trim()}>{children}</span>
   }
 
   return (
-    <NavLink to={to} className={navLinkClass}>
+    <NavLink
+      to={to}
+      className={({ isActive }) => `${navLinkClass({ isActive })} ${className ?? ''}`.trim()}
+    >
       <span className="flex items-center gap-2">
         {children}
         {badge != null && badge > 0 && (

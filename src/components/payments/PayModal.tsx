@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
 import type { GroupAction } from '../../types/contracts.ts'
+import { usePaymentBalances } from '../../hooks/usePaymentBalances.ts'
 import { formatAmount, formatHandle, truncateAddress } from '../../lib/utils/format.ts'
-import { getEthUsdPrice } from '../../lib/payments/ethPrice.ts'
-import { centsToEthWei, formatEthWei } from '../../lib/payments/centsToEth.ts'
-import type { PayMethod } from '../../lib/constants/app.ts'
+import { centsToUsdcUnits, formatUsdcUnits } from '../../lib/payments/centsToUsdc.ts'
+import { TestTokenFaucet } from './TestTokenFaucet.tsx'
 
 export type PayStatus =
   | 'idle'
@@ -16,31 +15,37 @@ type PayModalProps = {
   action: GroupAction | null
   status: PayStatus
   onClose: () => void
-  onPay: (method: PayMethod) => void
+  onPay: () => void
 }
 
 const STATUS_COPY: Record<Exclude<PayStatus, 'idle'>, string> = {
-  approving: 'Preparing payment…',
-  encrypting: 'Recording repayment…',
-  confirming: 'Confirm Sepolia ETH transfer in your wallet…',
-  success: 'Payment sent to payee.',
+  approving: 'Approving USDC for confidential wrap…',
+  encrypting: 'Encrypting payment amount…',
+  confirming: 'Confirm the transaction in your wallet…',
+  success: 'Confidential payment sent to payee.',
 }
 
 export function PayModal({ action, status, onClose, onPay }: PayModalProps) {
-  const [ethUsd, setEthUsd] = useState<number | null>(null)
-  const method: PayMethod = 'SEPOLIA_ETH'
-
-  useEffect(() => {
-    if (!action) return
-    void getEthUsdPrice().then(setEthUsd)
-  }, [action])
+  const { usdcBalance, isLoading: balancesLoading, isConnected } = usePaymentBalances()
 
   if (!action) return null
 
   const isBusy = status !== 'idle' && status !== 'success'
   const isDone = status === 'success'
-  const ethWei =
-    ethUsd != null ? centsToEthWei(action.amountCents, ethUsd) : null
+  const usdcUnits = centsToUsdcUnits(action.amountCents)
+
+  const hasEnoughUsdc =
+    usdcBalance != null && usdcUnits > 0n && usdcBalance >= usdcUnits
+
+  const canPay = isConnected && !balancesLoading && hasEnoughUsdc
+
+  const insufficientMessage = !isConnected
+    ? 'Connect your wallet to pay.'
+    : balancesLoading
+      ? 'Checking wallet balance…'
+      : !hasEnoughUsdc
+        ? `Need ${formatUsdcUnits(usdcUnits)} USDC to wrap and pay confidentially.`
+        : null
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 lg:items-center lg:p-4">
@@ -75,30 +80,29 @@ export function PayModal({ action, status, onClose, onPay }: PayModalProps) {
           <p className="mt-1 font-mono text-3xl font-semibold tabular-nums text-foreground">
             {formatAmount(action.amountCents)}
           </p>
-          {method === 'SEPOLIA_ETH' && ethWei != null && ethWei > 0n && (
+          {usdcUnits > 0n && (
             <p className="mt-2 font-mono text-sm tabular-nums text-accent">
-              ≈ {formatEthWei(ethWei)} ETH
-              {ethUsd != null && (
-                <span className="text-muted"> @ ${ethUsd.toLocaleString()} / ETH</span>
-              )}
+              {formatUsdcUnits(usdcUnits)} cUSD
             </p>
           )}
         </div>
 
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-border-subtle bg-surface/60 px-3 py-2.5">
+          <p className="text-[11px] uppercase tracking-wide text-muted">Your USDC balance</p>
+          <p className="font-mono text-sm tabular-nums text-foreground">
+            {!isConnected
+              ? '—'
+              : balancesLoading || usdcBalance == null
+                ? 'Checking…'
+                : `${formatUsdcUnits(usdcBalance)} USDC`}
+          </p>
+        </div>
+
         {action.counterpartyAddress && (
           <div className="mb-4 rounded-lg border border-border-subtle bg-surface/60 px-3 py-2.5 text-left">
-            <p className="text-[11px] uppercase tracking-wide text-muted">Payee receives</p>
+            <p className="text-[11px] uppercase tracking-wide text-muted">Payee address</p>
             <p className="mt-0.5 font-mono text-xs text-foreground">
               {truncateAddress(action.counterpartyAddress)}
-            </p>
-          </div>
-        )}
-
-        {!isDone && (
-          <div className="mb-6 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-left">
-            <p className="text-sm font-medium text-foreground">Sepolia ETH</p>
-            <p className="mt-1 text-xs text-muted">
-              Repayments are sent as native ETH to the payee&apos;s wallet on Sepolia testnet.
             </p>
           </div>
         )}
@@ -108,10 +112,20 @@ export function PayModal({ action, status, onClose, onPay }: PayModalProps) {
             <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
           </svg>
           <p className="text-xs leading-relaxed text-muted">
-            The owed amount comes from your FHE-decrypted share. Sepolia ETH is sent directly to
-            the payee&apos;s address; we verify the transaction before marking your share paid.
+            Your USDC is wrapped into confidential cUSD and transferred encrypted. Only you and the
+            payee can decrypt the amount on-chain.
           </p>
         </div>
+
+        {insufficientMessage && !isDone && !isBusy && (
+          <p className="mb-3 text-center text-sm text-negative">{insufficientMessage}</p>
+        )}
+
+        {!isDone && !isBusy && !canPay && isConnected && !balancesLoading && (
+          <div className="mb-4">
+            <TestTokenFaucet compact />
+          </div>
+        )}
 
         {status !== 'idle' && (
           <p
@@ -139,14 +153,14 @@ export function PayModal({ action, status, onClose, onPay }: PayModalProps) {
             </button>
             <button
               type="button"
-              onClick={() => onPay(method)}
-              disabled={isBusy || method !== 'SEPOLIA_ETH'}
-              className="veil-btn-primary flex-1"
+              onClick={onPay}
+              disabled={isBusy || !canPay}
+              className="veil-btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isBusy
                 ? 'Processing…'
-                : ethWei != null && method === 'SEPOLIA_ETH'
-                  ? `Pay ${formatEthWei(ethWei)} ETH`
+                : usdcUnits > 0n
+                  ? `Pay ${formatUsdcUnits(usdcUnits)} cUSD`
                   : `Pay ${formatAmount(action.amountCents)}`}
             </button>
           </div>

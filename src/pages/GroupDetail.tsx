@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { BalanceCard } from '../components/balance/BalanceCard.tsx'
 import { MyActions } from '../components/balance/MyActions.tsx'
 import { ExpenseFeed } from '../components/expenses/ExpenseFeed.tsx'
 import { ExpenseDetailSheet } from '../components/expenses/ExpenseDetailSheet.tsx'
@@ -18,10 +17,8 @@ import { useBalance } from '../lib/contracts/hooks/useBalance.ts'
 import { useExpenses } from '../lib/contracts/hooks/useExpenses.ts'
 import { useExpenseDetail } from '../lib/contracts/hooks/useExpenseDetail.ts'
 import { useGroup } from '../lib/contracts/hooks/useGroup.ts'
-import { revealBalance } from '../lib/fhe/decrypt.ts'
 import { FheNotConfiguredError } from '../lib/contracts/actions/recordExpense.ts'
 import { createExpenseFlow } from '../lib/services/createExpense.ts'
-import { useBalanceStore } from '../store/balance.ts'
 import { toast } from '../store/toast.ts'
 import { useWallet } from '../hooks/useWallet.ts'
 import { executePayAction } from '../lib/services/payExpenseShare.ts'
@@ -32,9 +29,7 @@ import {
   submitExpenseFlag,
 } from '../lib/services/expenseActions.ts'
 import { formatHandle } from '../lib/utils/format.ts'
-import type { RevealStatus } from '../components/balance/RevealButton.tsx'
 import type { GroupAction } from '../types/contracts.ts'
-import type { PayMethod } from '../lib/constants/app.ts'
 
 export function GroupDetail() {
   const { id: groupId = '' } = useParams()
@@ -45,7 +40,6 @@ export function GroupDetail() {
   const balance = useBalance(groupId)
   const expenses = useExpenses(groupId)
 
-  const [revealStatus, setRevealStatus] = useState<RevealStatus>('idle')
   const [expenseFormOpen, setExpenseFormOpen] = useState(false)
   const [expenseFormStatus, setExpenseFormStatus] = useState<ExpenseFormStatus>('idle')
   const [expenseConfirmation, setExpenseConfirmation] = useState<{
@@ -77,16 +71,15 @@ export function GroupDetail() {
     }
   }, [searchParams, setSearchParams])
 
-  const reveal = useBalanceStore((s) => s.reveal)
-
-  const handlePay = async (method: PayMethod) => {
+  const handlePay = async () => {
     if (!payAction) return
 
     try {
-      setPayStatus('confirming')
-      await executePayAction({ method, action: payAction, groupId })
-
-      setPayStatus('encrypting')
+      await executePayAction({
+        action: payAction,
+        groupId,
+        onPhase: (phase) => setPayStatus(phase),
+      })
       await queryClient.invalidateQueries({ queryKey: ['balance'] })
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       await queryClient.invalidateQueries({ queryKey: ['expenses'] })
@@ -101,16 +94,14 @@ export function GroupDetail() {
     } catch (err) {
       setPayStatus('idle')
       const code = err instanceof Error ? err.message : ''
-      if (code === 'stablecoin_not_available_on_testnet') {
-        toast.error('Use Sepolia ETH on testnet')
-      } else if (code === 'payee_address_missing') {
+      if (code === 'payee_address_missing') {
         toast.error('Payee wallet address not found')
+      } else if (code === 'payment_amount_invalid') {
+        toast.error('Payment amount is invalid')
       } else if (code === 'tx_not_found') {
-        toast.error('ETH sent but confirmation is delayed. Refresh in a moment.')
+        toast.error('Payment sent but confirmation is delayed. Refresh in a moment.')
       } else if (code === 'tx_recipient_mismatch' || code === 'tx_sender_mismatch') {
         toast.error('Transaction did not match the expected payee.')
-      } else if (code === 'tx_value_insufficient') {
-        toast.error('ETH amount was below the owed share')
       } else if (code === 'unauthorized') {
         toast.error('Session expired. Sign in again, then retry.')
       } else if (code.startsWith('tx_')) {
@@ -124,18 +115,6 @@ export function GroupDetail() {
   const closePay = () => {
     setPayAction(null)
     setPayStatus('idle')
-  }
-
-  const handleReveal = async () => {
-    try {
-      setRevealStatus('signing')
-      setRevealStatus('decrypting')
-      const amountCents = await revealBalance(balance.myBalanceHandle)
-      reveal(amountCents)
-      setRevealStatus('revealed')
-    } catch {
-      setRevealStatus('idle')
-    }
   }
 
   const handleRemind = async (expenseId: string, memberAddress: string, handle: string) => {
@@ -233,14 +212,6 @@ export function GroupDetail() {
             </button>
           </div>
         }
-      />
-
-      <BalanceCard
-        isLoading={balance.isLoading}
-        isError={balance.isError}
-        revealStatus={revealStatus}
-        onReveal={handleReveal}
-        className="mb-6"
       />
 
       <div className="grid gap-6 lg:grid-cols-3 lg:items-start">

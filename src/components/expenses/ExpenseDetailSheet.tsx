@@ -1,5 +1,6 @@
 import type { ExpenseDetail } from '../../types/contracts.ts'
 import { formatAmount, formatHandle, timeAgo } from '../../lib/utils/format.ts'
+import { ExpenseStatusChip } from './ExpenseStatusChip.tsx'
 
 type ExpenseDetailSheetProps = {
   detail: ExpenseDetail | null
@@ -7,23 +8,6 @@ type ExpenseDetailSheetProps = {
   onClose: () => void
   onRemind?: (memberAddress: string, handle: string) => void
   remindingAddress?: string | null
-}
-
-function StatusChip({ status }: { status: 'pending' | 'paid' }) {
-  if (status === 'paid') {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-positive/15 px-2.5 py-0.5 text-[11px] font-medium text-positive">
-        <span className="h-1.5 w-1.5 rounded-full bg-positive" />
-        Paid
-      </span>
-    )
-  }
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-medium text-accent">
-      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-      Pending
-    </span>
-  )
 }
 
 export function ExpenseDetailSheet({
@@ -171,7 +155,7 @@ export function ExpenseDetailSheet({
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
-                            <StatusChip status={share.status} />
+                            <ExpenseStatusChip status={share.status} />
                             {isPayer &&
                               !isPayerRow &&
                               share.status === 'pending' &&

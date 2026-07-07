@@ -125,10 +125,7 @@ export function OnboardingSetup() {
             </p>
           </SectionCard>
           {showWalletHelp && (
-            <WalletGuide
-              onAddSepolia={() => {}}
-              onOpenFaucet={() => window.open('https://sepoliafaucet.com', '_blank', 'noopener')}
-            />
+            <WalletGuide onAddSepolia={() => {}} />
           )}
         </>
       )}

@@ -1,9 +1,11 @@
+import { TestTokenFaucet } from '../payments/TestTokenFaucet.tsx'
+import { SEPOLIA_ETH_FAUCET_URL } from '../../lib/constants/app.ts'
+
 type WalletGuideProps = {
   onAddSepolia: () => void
-  onOpenFaucet: () => void
 }
 
-export function WalletGuide({ onAddSepolia, onOpenFaucet }: WalletGuideProps) {
+export function WalletGuide({ onAddSepolia }: WalletGuideProps) {
   const steps = [
     {
       step: '1',
@@ -33,12 +35,23 @@ export function WalletGuide({ onAddSepolia, onOpenFaucet }: WalletGuideProps) {
     {
       step: '3',
       title: 'Get test ETH',
-      description: 'Free from a Sepolia faucet',
+      description: 'Free from a Sepolia faucet (needed for gas)',
       action: (
-        <button type="button" onClick={onOpenFaucet} className="veil-btn-secondary">
-          Open faucet
-        </button>
+        <a
+          href={SEPOLIA_ETH_FAUCET_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="veil-btn-secondary inline-block"
+        >
+          Open ETH faucet
+        </a>
       ),
+    },
+    {
+      step: '4',
+      title: 'Get test cUSD',
+      description: 'Mint mock USDC in-app or use Circle’s Sepolia faucet',
+      action: <TestTokenFaucet compact />,
     },
   ]
 

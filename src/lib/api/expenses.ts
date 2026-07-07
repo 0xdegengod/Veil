@@ -15,6 +15,7 @@ type ApiExpense = {
   isYourExpense?: boolean
   canViewAmounts?: boolean
   pendingReceivableCount?: number
+  yourShareStatus?: 'pending' | 'paid'
 }
 
 export type ApiExpenseDetailMeta = {
@@ -48,6 +49,7 @@ function mapExpense(row: ApiExpense): Expense {
     createdAt: row.createdAt,
     isYourExpense: row.isYourExpense,
     pendingReceivableCount: row.pendingReceivableCount,
+    yourShareStatus: row.yourShareStatus,
   }
 }
 
@@ -147,7 +149,11 @@ export async function createExpense(
 export async function recordExpenseRepayment(
   groupId: string,
   expenseId: string,
-  input: { txHash: string; expectedWei: string },
+  input: {
+    method: 'SEPOLIA_ETH' | 'CUSD'
+    txHash: string
+    expectedWei?: string
+  },
 ): Promise<void> {
   await apiFetch(`/groups/${groupId}/expenses/${expenseId}/repay`, {
     method: 'POST',

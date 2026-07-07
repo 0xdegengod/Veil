@@ -85,5 +85,14 @@ invites.post('/:token/accept', async (c) => {
 
   if (!group) return apiError(c, 'not_found', 404)
 
+  if (normalizeAddress(group.adminAddress) !== caller) {
+    await db.insert(schema.notifications).values({
+      recipientAddress: normalizeAddress(group.adminAddress),
+      type: 'invite',
+      message: `@${profile.handle} joined ${group.name} via invite link`,
+      link: `/groups/${group.id}/settings`,
+    })
+  }
+
   return c.json({ groupId: group.id, groupName: group.name }, 201)
 })
