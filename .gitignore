@@ -49,3 +49,4 @@ contracts/broadcast/
 contracts/dependencies/
 contracts/soldeer.lock
 cursor-chat-recovery/
+cursor-chat-recovery/ # prevent re-adding
